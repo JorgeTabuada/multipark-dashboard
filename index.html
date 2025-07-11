@@ -58,7 +58,7 @@
                         <i class="fas fa-car"></i>
                     </div>
                     <div class="stat-content">
-                        <h3 id="total-bookings">2</h3>
+                        <h3 id="total-bookings">...</h3>
                         <p>Total Bookings</p>
                     </div>
                 </div>
@@ -68,7 +68,7 @@
                         <i class="fas fa-clock"></i>
                     </div>
                     <div class="stat-content">
-                        <h3 id="pending-approval">1</h3>
+                        <h3 id="pending-approval">...</h3>
                         <p>Aguarda Aprovação</p>
                     </div>
                 </div>
@@ -78,7 +78,7 @@
                         <i class="fas fa-euro-sign"></i>
                     </div>
                     <div class="stat-content">
-                        <h3 id="total-amount">€63.50</h3>
+                        <h3 id="total-amount">€...</h3>
                         <p>Valor Total</p>
                     </div>
                 </div>
@@ -88,7 +88,7 @@
                         <i class="fas fa-percentage"></i>
                     </div>
                     <div class="stat-content">
-                        <h3 id="approval-rate">50%</h3>
+                        <h3 id="approval-rate">...%</h3>
                         <p>Taxa Aprovação</p>
                     </div>
                 </div>
@@ -104,13 +104,13 @@
                             <div class="split-item partner">
                                 <div class="split-percentage">60%</div>
                                 <div class="split-label">Parceiro</div>
-                                <div class="split-amount" id="partner-amount">€38.10</div>
+                                <div class="split-amount" id="partner-amount">€...</div>
                             </div>
                             <div class="split-divider"></div>
                             <div class="split-item multipark">
                                 <div class="split-percentage">40%</div>
                                 <div class="split-label">Multipark</div>
-                                <div class="split-amount" id="multipark-amount">€25.40</div>
+                                <div class="split-amount" id="multipark-amount">€...</div>
                             </div>
                         </div>
                     </div>
@@ -123,16 +123,8 @@
                     <div class="card-content">
                         <div id="recent-activities" class="activities-list">
                             <div class="activity-item">
-                                <i class="fas fa-upload"></i>
-                                <span>2 bookings carregados</span>
-                            </div>
-                            <div class="activity-item">
-                                <i class="fas fa-clock"></i>
-                                <span>1 aguarda aprovação</span>
-                            </div>
-                            <div class="activity-item">
-                                <i class="fas fa-euro-sign"></i>
-                                <span>€63.50 valor total processado</span>
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>A carregar dados do Supabase...</span>
                             </div>
                         </div>
                     </div>
@@ -150,15 +142,24 @@
                 <div class="card-content">
                     <div class="upload-area" id="upload-zone">
                         <i class="fas fa-cloud-upload-alt"></i>
-                        <h3>Funcionalidade em desenvolvimento</h3>
-                        <p>Backend API necessário para processar ficheiros Excel</p>
-                        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                            <p><strong>Dados de teste já carregados:</strong></p>
-                            <ul style="text-align: left; margin: 0;">
-                                <li>João Silva (TEST123) - €35.00 - Aprovado</li>
-                                <li>Maria Santos (TEST456) - €28.50 - Pendente</li>
-                            </ul>
+                        <h3>Arraste o ficheiro Excel aqui</h3>
+                        <p>ou clique para seleccionar</p>
+                        <input type="file" id="excel-file" accept=".xlsx,.xls" style="display: none;">
+                        <button class="btn btn-primary" onclick="document.getElementById('excel-file').click()">
+                            <i class="fas fa-file-excel"></i>
+                            Escolher Ficheiro
+                        </button>
+                    </div>
+                    
+                    <div id="upload-progress" class="upload-progress" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
                         </div>
+                        <p id="progress-text">A processar...</p>
+                    </div>
+                    
+                    <div id="upload-result" class="upload-result" style="display: none;">
+                        <!-- Results will be populated here -->
                     </div>
                 </div>
             </div>
@@ -168,38 +169,48 @@
         <section id="bookings" class="content-section">
             <div class="section-header">
                 <h2>📊 Lista de Bookings</h2>
+                <div class="filters">
+                    <select id="brand-filter" class="form-select">
+                        <option value="">Todas as marcas</option>
+                    </select>
+                    <select id="approval-filter" class="form-select">
+                        <option value="">Todos os estados</option>
+                        <option value="pending">Aguarda aprovação</option>
+                        <option value="approved">Aprovados</option>
+                    </select>
+                    <button class="btn btn-success" id="approve-all-btn" onclick="approveAllPending()">
+                        <i class="fas fa-check-double"></i>
+                        Aprovar Todos
+                    </button>
+                </div>
             </div>
             
             <div class="card">
                 <div class="card-content">
                     <div class="table-container">
-                        <table class="data-table">
+                        <table class="data-table" id="bookings-table">
                             <thead>
                                 <tr>
+                                    <th>
+                                        <input type="checkbox" id="select-all">
+                                    </th>
                                     <th>Matrícula</th>
                                     <th>Nome</th>
+                                    <th>Checkout (Real)</th>
+                                    <th>Checkout (Formatado)</th>
+                                    <th>Diferença</th>
                                     <th>Valor</th>
-                                    <th>Parceiro (60%)</th>
-                                    <th>Multipark (40%)</th>
+                                    <th>Marca</th>
                                     <th>Estado</th>
+                                    <th>Acções</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr class="success">
-                                    <td><strong>TEST123</strong></td>
-                                    <td>João Silva</td>
-                                    <td><strong>€35.00</strong></td>
-                                    <td>€21.00</td>
-                                    <td>€14.00</td>
-                                    <td><span class="status-badge approved">Aprovado</span></td>
-                                </tr>
-                                <tr class="danger">
-                                    <td><strong>TEST456</strong></td>
-                                    <td>Maria Santos</td>
-                                    <td><strong>€28.50</strong></td>
-                                    <td>€17.10</td>
-                                    <td>€11.40</td>
-                                    <td><span class="status-badge pending">Pendente</span></td>
+                                <tr>
+                                    <td colspan="10" style="text-align: center; padding: 2rem;">
+                                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                        <p>A carregar bookings...</p>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -212,14 +223,37 @@
         <section id="partner" class="content-section">
             <div class="section-header">
                 <h2>🤝 Contas Parceiro (60%)</h2>
+                <button class="btn btn-success" onclick="exportPartnerData()">
+                    <i class="fas fa-download"></i>
+                    Exportar Excel
+                </button>
             </div>
             
-            <div class="card">
-                <div class="card-content">
-                    <div class="financial-breakdown">
-                        <div class="breakdown-item">
-                            <h4>Total Parceiro</h4>
-                            <p class="amount">€38.10</p>
+            <div class="financial-cards">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Por Marca de Parque</h3>
+                    </div>
+                    <div class="card-content">
+                        <div id="partner-by-brand" class="financial-breakdown">
+                            <div class="activity-item">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Secção em desenvolvimento</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Por Método de Pagamento</h3>
+                    </div>
+                    <div class="card-content">
+                        <div id="partner-by-payment" class="financial-breakdown">
+                            <div class="activity-item">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Secção em desenvolvimento</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -230,14 +264,37 @@
         <section id="multipark" class="content-section">
             <div class="section-header">
                 <h2>🏢 Multipark (40%)</h2>
+                <button class="btn btn-success" onclick="exportMultiparkData()">
+                    <i class="fas fa-download"></i>
+                    Exportar Excel
+                </button>
             </div>
             
-            <div class="card">
-                <div class="card-content">
-                    <div class="financial-breakdown">
-                        <div class="breakdown-item">
-                            <h4>Total Multipark</h4>
-                            <p class="amount">€25.40</p>
+            <div class="financial-cards">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Por Marca de Parque</h3>
+                    </div>
+                    <div class="card-content">
+                        <div id="multipark-by-brand" class="financial-breakdown">
+                            <div class="activity-item">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Secção em desenvolvimento</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Por Método de Pagamento</h3>
+                    </div>
+                    <div class="card-content">
+                        <div id="multipark-by-payment" class="financial-breakdown">
+                            <div class="activity-item">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Secção em desenvolvimento</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -245,17 +302,17 @@
         </section>
     </div>
 
+    <!-- Loading Modal -->
+    <div id="loading-modal" class="modal">
+        <div class="modal-content loading">
+            <div class="spinner"></div>
+            <p>A processar dados...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
     <script src="frontend/main.js"></script>
-    
-    <style>
-    /* Basic inline styles for demo */
-    .status-badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
-    .status-badge.approved { background: #d1fae5; color: #065f46; }
-    .status-badge.pending { background: #fef3c7; color: #92400e; }
-    .breakdown-item { text-align: center; padding: 1rem; }
-    .breakdown-item .amount { font-size: 1.5rem; font-weight: bold; color: #2563eb; margin: 0; }
-    .success { background-color: #f0f9ff; }
-    .danger { background-color: #fef2f2; }
-    </style>
 </body>
 </html>
