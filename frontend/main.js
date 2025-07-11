@@ -1,9 +1,20 @@
 /**
- * MultiPark Dashboard - Frontend Logic
+ * MultiPark Dashboard - Frontend with Supabase
  */
 
-// API Configuration
-const API_BASE_URL = 'http://localhost:8000/api';
+// Supabase Configuration
+const SUPABASE_URL = 'https://sqtmdfwezeqdjyrozsvn.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxdG1kZndlemVxZGp5cm96c3ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIyNDM1MDUsImV4cCI6MjA2NzgxOTUwNX0.97zp8iPoaTwKmoVuH-_wpb1G3xG3A_QxgGhZgg6HcDs';
+
+// Import Supabase (CDN)
+const script = document.createElement('script');
+script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js';
+script.onload = () => {
+    // Initialize Supabase client
+    window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('🚀 Supabase connected!');
+};
+document.head.appendChild(script);
 
 // Global State
 let appState = {
@@ -16,7 +27,10 @@ let appState = {
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
-    loadDashboardStats();
+    // Wait for Supabase to load
+    setTimeout(() => {
+        loadDashboardStats();
+    }, 1000);
 });
 
 function initializeApp() {
@@ -47,38 +61,48 @@ function setupEventListeners() {
     const fileInput = document.getElementById('excel-file');
     const uploadZone = document.getElementById('upload-zone');
     
-    fileInput.addEventListener('change', handleFileUpload);
+    if (fileInput) {
+        fileInput.addEventListener('change', handleFileUpload);
+    }
     
     // Drag & Drop
-    uploadZone.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.classList.add('dragover');
-    });
-    
-    uploadZone.addEventListener('dragleave', function(e) {
-        e.preventDefault();
-        this.classList.remove('dragover');
-    });
-    
-    uploadZone.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.classList.remove('dragover');
+    if (uploadZone) {
+        uploadZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
         
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            processFile(files[0]);
-        }
-    });
+        uploadZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+        
+        uploadZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        });
+    }
     
     // Filters
-    document.getElementById('brand-filter').addEventListener('change', filterBookings);
-    document.getElementById('approval-filter').addEventListener('change', filterBookings);
+    const brandFilter = document.getElementById('brand-filter');
+    const approvalFilter = document.getElementById('approval-filter');
+    
+    if (brandFilter) brandFilter.addEventListener('change', filterBookings);
+    if (approvalFilter) approvalFilter.addEventListener('change', filterBookings);
     
     // Select All Checkbox
-    document.getElementById('select-all').addEventListener('change', function() {
-        const checkboxes = document.querySelectorAll('.booking-checkbox');
-        checkboxes.forEach(cb => cb.checked = this.checked);
-    });
+    const selectAll = document.getElementById('select-all');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.booking-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        });
+    }
 }
 
 // Navigation
@@ -104,7 +128,7 @@ function showSection(sectionId) {
     }
 }
 
-// File Upload
+// File Upload with Supabase Edge Function
 function handleFileUpload(event) {
     const file = event.target.files[0];
     if (file) {
@@ -118,6 +142,11 @@ async function processFile(file) {
         return;
     }
     
+    if (!window.supabase) {
+        showToast('A carregar Supabase...', 'warning');
+        return;
+    }
+    
     showLoadingModal(true);
     showUploadProgress(true);
     
@@ -125,30 +154,27 @@ async function processFile(file) {
     formData.append('file', file);
     
     try {
-        // Simulate progress
         updateProgress(20, 'A carregar ficheiro...');
         
-        const response = await fetch(`${API_BASE_URL}/upload-excel`, {
-            method: 'POST',
+        // Call Supabase Edge Function
+        const { data, error } = await window.supabase.functions.invoke('process-excel', {
             body: formData
         });
         
         updateProgress(60, 'A processar dados...');
         
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
+        if (error) {
+            throw error;
         }
-        
-        const result = await response.json();
         
         updateProgress(100, 'Concluído!');
         
         setTimeout(() => {
             showLoadingModal(false);
             showUploadProgress(false);
-            showUploadResult(result);
+            showUploadResult(data);
             loadDashboardStats();
-            showToast(`Processados ${result.bookings_count} registos com sucesso!`, 'success');
+            showToast(`Processados ${data.bookings_count} registos com sucesso!`, 'success');
         }, 1000);
         
     } catch (error) {
@@ -161,53 +187,92 @@ async function processFile(file) {
 
 function showUploadProgress(show) {
     const progressDiv = document.getElementById('upload-progress');
-    progressDiv.style.display = show ? 'block' : 'none';
-    
-    if (!show) {
-        updateProgress(0, '');
+    if (progressDiv) {
+        progressDiv.style.display = show ? 'block' : 'none';
+        
+        if (!show) {
+            updateProgress(0, '');
+        }
     }
 }
 
 function updateProgress(percentage, text) {
-    document.getElementById('progress-fill').style.width = percentage + '%';
-    document.getElementById('progress-text').textContent = text;
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    
+    if (progressFill) progressFill.style.width = percentage + '%';
+    if (progressText) progressText.textContent = text;
 }
 
 function showUploadResult(result) {
     const resultDiv = document.getElementById('upload-result');
-    resultDiv.innerHTML = `
-        <div class="upload-success">
-            <h4>✅ Upload Concluído</h4>
-            <div class="result-stats">
-                <div class="stat">
-                    <strong>${result.bookings_count}</strong>
-                    <span>Registos processados</span>
+    if (resultDiv) {
+        resultDiv.innerHTML = `
+            <div class="upload-success">
+                <h4>✅ Upload Concluído</h4>
+                <div class="result-stats">
+                    <div class="stat">
+                        <strong>${result.bookings_count}</strong>
+                        <span>Registos processados</span>
+                    </div>
+                    <div class="stat">
+                        <strong>${result.needs_approval}</strong>
+                        <span>Aguardam aprovação</span>
+                    </div>
                 </div>
-                <div class="stat">
-                    <strong>${result.needs_approval}</strong>
-                    <span>Aguardam aprovação</span>
+                <div class="result-actions">
+                    <button class="btn btn-primary" onclick="showSection('bookings')">
+                        Ver Bookings
+                    </button>
+                    <button class="btn btn-success" onclick="showSection('dashboard')">
+                        Ir para Dashboard
+                    </button>
                 </div>
             </div>
-            <div class="result-actions">
-                <button class="btn btn-primary" onclick="showSection('bookings')">
-                    Ver Bookings
-                </button>
-                <button class="btn btn-success" onclick="showSection('dashboard')">
-                    Ir para Dashboard
-                </button>
-            </div>
-        </div>
-    `;
-    resultDiv.style.display = 'block';
+        `;
+        resultDiv.style.display = 'block';
+    }
 }
 
-// Dashboard
+// Dashboard with Supabase data
 async function loadDashboardStats() {
+    if (!window.supabase) {
+        console.log('Supabase not loaded yet');
+        return;
+    }
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/dashboard/stats`);
-        if (!response.ok) throw new Error('Erro ao carregar estatísticas');
+        // Get bookings count
+        const { data: bookings, error: bookingsError } = await window.supabase
+            .from('bookings')
+            .select('*');
         
-        const stats = await response.json();
+        if (bookingsError) throw bookingsError;
+        
+        // Get financial splits
+        const { data: splits, error: splitsError } = await window.supabase
+            .from('financial_splits')
+            .select('*');
+        
+        if (splitsError) throw splitsError;
+        
+        // Calculate stats
+        const totalBookings = bookings.length;
+        const pendingApproval = bookings.filter(b => b.needs_approval && !b.status_approved).length;
+        const totalAmount = splits.reduce((sum, s) => sum + parseFloat(s.total_amount), 0);
+        const partnerAmount = splits.reduce((sum, s) => sum + parseFloat(s.partner_amount_60), 0);
+        const multiparkAmount = splits.reduce((sum, s) => sum + parseFloat(s.multipark_amount_40), 0);
+        const approvalRate = totalBookings > 0 ? Math.round((totalBookings - pendingApproval) / totalBookings * 100) : 0;
+        
+        const stats = {
+            total_bookings: totalBookings,
+            pending_approval: pendingApproval,
+            total_amount: totalAmount,
+            partner_60_percent: partnerAmount,
+            multipark_40_percent: multiparkAmount,
+            approval_rate: approvalRate
+        };
+        
         appState.dashboardStats = stats;
         updateDashboardDisplay(stats);
         
@@ -226,19 +291,26 @@ async function loadDashboardStats() {
 }
 
 function updateDashboardDisplay(stats) {
-    document.getElementById('total-bookings').textContent = stats.total_bookings;
-    document.getElementById('pending-approval').textContent = stats.pending_approval;
-    document.getElementById('total-amount').textContent = `€${stats.total_amount.toFixed(2)}`;
-    document.getElementById('approval-rate').textContent = `${stats.approval_rate}%`;
+    const totalBookingsEl = document.getElementById('total-bookings');
+    const pendingApprovalEl = document.getElementById('pending-approval');
+    const totalAmountEl = document.getElementById('total-amount');
+    const approvalRateEl = document.getElementById('approval-rate');
+    const partnerAmountEl = document.getElementById('partner-amount');
+    const multiparkAmountEl = document.getElementById('multipark-amount');
     
-    document.getElementById('partner-amount').textContent = `€${stats.partner_60_percent.toFixed(2)}`;
-    document.getElementById('multipark-amount').textContent = `€${stats.multipark_40_percent.toFixed(2)}`;
+    if (totalBookingsEl) totalBookingsEl.textContent = stats.total_bookings;
+    if (pendingApprovalEl) pendingApprovalEl.textContent = stats.pending_approval;
+    if (totalAmountEl) totalAmountEl.textContent = `€${stats.total_amount.toFixed(2)}`;
+    if (approvalRateEl) approvalRateEl.textContent = `${stats.approval_rate}%`;
+    if (partnerAmountEl) partnerAmountEl.textContent = `€${stats.partner_60_percent.toFixed(2)}`;
+    if (multiparkAmountEl) multiparkAmountEl.textContent = `€${stats.multipark_40_percent.toFixed(2)}`;
     
     updateRecentActivities(stats);
 }
 
 function updateRecentActivities(stats) {
     const activitiesContainer = document.getElementById('recent-activities');
+    if (!activitiesContainer) return;
     
     if (stats.total_bookings === 0) {
         activitiesContainer.innerHTML = `
@@ -273,18 +345,30 @@ function updateRecentActivities(stats) {
     `).join('');
 }
 
-// Bookings Management
+// Bookings Management with Supabase
 async function loadBookings(filters = {}) {
+    if (!window.supabase) return;
+    
     try {
-        const params = new URLSearchParams();
+        let query = window.supabase
+            .from('bookings')
+            .select(`
+                *,
+                financial_splits (
+                    partner_amount_60,
+                    multipark_amount_40,
+                    total_amount
+                )
+            `)
+            .order('created_at', { ascending: false });
+        
         if (filters.needs_approval !== undefined) {
-            params.append('needs_approval', filters.needs_approval);
+            query = query.eq('needs_approval', filters.needs_approval);
         }
         
-        const response = await fetch(`${API_BASE_URL}/bookings?${params}`);
-        if (!response.ok) throw new Error('Erro ao carregar bookings');
+        const { data: bookings, error } = await query;
+        if (error) throw error;
         
-        const bookings = await response.json();
         appState.bookings = bookings;
         updateBookingsTable(bookings);
         updateBrandFilter(bookings);
@@ -297,6 +381,7 @@ async function loadBookings(filters = {}) {
 
 function updateBookingsTable(bookings) {
     const tbody = document.querySelector('#bookings-table tbody');
+    if (!tbody) return;
     
     if (bookings.length === 0) {
         tbody.innerHTML = `
@@ -314,6 +399,7 @@ function updateBookingsTable(bookings) {
         const statusClass = getRowStatusClass(booking);
         const statusText = booking.status_approved ? 'Aprovado' : 'Pendente';
         const statusBadgeClass = booking.status_approved ? 'approved' : 'pending';
+        const split = booking.financial_splits?.[0] || {};
         
         return `
             <tr class="${statusClass}">
@@ -321,14 +407,14 @@ function updateBookingsTable(bookings) {
                     <input type="checkbox" class="booking-checkbox" value="${booking.id}">
                 </td>
                 <td><strong>${booking.license_plate}</strong></td>
-                <td>${booking.name} ${booking.lastname}</td>
+                <td>${booking.name} ${booking.lastname || ''}</td>
                 <td>${formatTimestamp(booking.checkout_timestamp)}</td>
-                <td>${booking.checkout_formatted}</td>
+                <td>${booking.checkout_formatted || '-'}</td>
                 <td>
                     ${getDifferenceDisplay(booking.date_difference_days, booking.needs_approval)}
                 </td>
-                <td><strong>€${booking.price_delivery.toFixed(2)}</strong></td>
-                <td><span class="brand-tag">${booking.park_brand}</span></td>
+                <td><strong>€${parseFloat(booking.price_delivery).toFixed(2)}</strong></td>
+                <td><span class="brand-tag">${booking.park_brand || '-'}</span></td>
                 <td>
                     <span class="status-badge ${statusBadgeClass}">${statusText}</span>
                 </td>
@@ -367,14 +453,20 @@ function formatTimestamp(timestamp) {
     return date.toLocaleString('pt-PT');
 }
 
-// Approval Functions
+// Approval Functions with Supabase
 async function approveBooking(bookingId) {
+    if (!window.supabase) return;
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/approve`, {
-            method: 'PATCH'
-        });
+        const { data, error } = await window.supabase
+            .from('bookings')
+            .update({ 
+                status_approved: true, 
+                approved_at: new Date().toISOString() 
+            })
+            .eq('id', bookingId);
         
-        if (!response.ok) throw new Error('Erro ao aprovar booking');
+        if (error) throw error;
         
         showToast('Booking aprovado com sucesso!', 'success');
         loadBookings();
@@ -401,11 +493,15 @@ async function approveAllPending() {
     showLoadingModal(true);
     
     try {
-        const promises = pendingBookings.map(booking => 
-            fetch(`${API_BASE_URL}/bookings/${booking.id}/approve`, { method: 'PATCH' })
-        );
+        const { data, error } = await window.supabase
+            .from('bookings')
+            .update({ 
+                status_approved: true, 
+                approved_at: new Date().toISOString() 
+            })
+            .in('id', pendingBookings.map(b => b.id));
         
-        await Promise.all(promises);
+        if (error) throw error;
         
         showLoadingModal(false);
         showToast(`${pendingBookings.length} bookings aprovados!`, 'success');
@@ -422,6 +518,8 @@ async function approveAllPending() {
 // Filters
 function updateBrandFilter(bookings) {
     const brandFilter = document.getElementById('brand-filter');
+    if (!brandFilter) return;
+    
     const brands = [...new Set(bookings.map(b => b.park_brand).filter(Boolean))];
     
     brandFilter.innerHTML = '<option value="">Todas as marcas</option>' +
@@ -429,65 +527,36 @@ function updateBrandFilter(bookings) {
 }
 
 function filterBookings() {
-    const brandFilter = document.getElementById('brand-filter').value;
-    const approvalFilter = document.getElementById('approval-filter').value;
+    const brandFilter = document.getElementById('brand-filter');
+    const approvalFilter = document.getElementById('approval-filter');
+    
+    const brandValue = brandFilter?.value || '';
+    const approvalValue = approvalFilter?.value || '';
     
     let filteredBookings = [...appState.bookings];
     
-    if (brandFilter) {
-        filteredBookings = filteredBookings.filter(b => b.park_brand === brandFilter);
+    if (brandValue) {
+        filteredBookings = filteredBookings.filter(b => b.park_brand === brandValue);
     }
     
-    if (approvalFilter === 'pending') {
+    if (approvalValue === 'pending') {
         filteredBookings = filteredBookings.filter(b => !b.status_approved);
-    } else if (approvalFilter === 'approved') {
+    } else if (approvalValue === 'approved') {
         filteredBookings = filteredBookings.filter(b => b.status_approved);
     }
     
     updateBookingsTable(filteredBookings);
 }
 
-// Financial Sections
+// Financial Sections (placeholders)
 async function loadPartnerFinancials() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/financial/partner`);
-        // For now, show placeholder
-        showFinancialBreakdown('partner', []);
-    } catch (error) {
-        console.error('Erro carregar financials parceiro:', error);
-    }
+    showToast('Secção em desenvolvimento', 'info');
 }
 
 async function loadMultiparkFinancials() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/financial/multipark`);
-        // For now, show placeholder
-        showFinancialBreakdown('multipark', []);
-    } catch (error) {
-        console.error('Erro carregar financials multipark:', error);
-    }
+    showToast('Secção em desenvolvimento', 'info');
 }
 
-function showFinancialBreakdown(type, data) {
-    const container = document.getElementById(`${type}-by-brand`);
-    const paymentContainer = document.getElementById(`${type}-by-payment`);
-    
-    if (data.length === 0) {
-        const message = `
-            <div class="activity-item">
-                <i class="fas fa-info-circle"></i>
-                <span>Carregue dados primeiro para ver breakdown financeiro</span>
-            </div>
-        `;
-        container.innerHTML = message;
-        paymentContainer.innerHTML = message;
-        return;
-    }
-    
-    // Implement breakdown display
-}
-
-// Export Functions
 function exportPartnerData() {
     showToast('Função de export será implementada', 'warning');
 }
@@ -499,19 +568,42 @@ function exportMultiparkData() {
 // UI Utilities
 function showLoadingModal(show) {
     const modal = document.getElementById('loading-modal');
-    modal.classList.toggle('active', show);
+    if (modal) {
+        modal.classList.toggle('active', show);
+    }
 }
 
 function showToast(message, type = 'info') {
-    const toastContainer = document.getElementById('toast-container');
+    const toastContainer = document.getElementById('toast-container') || document.body;
     
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 9999;
+        max-width: 400px;
+    `;
+    
+    const colors = {
+        success: '#22c55e',
+        error: '#ef4444', 
+        warning: '#f59e0b',
+        info: '#3b82f6'
+    };
+    
+    toast.style.backgroundColor = colors[type] || colors.info;
+    
     toast.innerHTML = `
         <div style="display: flex; align-items: center; justify-content: space-between;">
             <span>${message}</span>
             <button onclick="this.parentElement.parentElement.remove()" 
-                    style="background: none; border: none; font-size: 1.2em; cursor: pointer; margin-left: 1rem;">
+                    style="background: none; border: none; color: white; font-size: 1.2em; cursor: pointer; margin-left: 1rem;">
                 &times;
             </button>
         </div>
@@ -527,7 +619,7 @@ function showToast(message, type = 'info') {
     }, 5000);
 }
 
-// Add some CSS for upload result
+// Add CSS for styling
 const style = document.createElement('style');
 style.textContent = `
     .upload-success {
@@ -536,7 +628,7 @@ style.textContent = `
     }
     
     .upload-success h4 {
-        color: var(--success-color);
+        color: #22c55e;
         margin-bottom: 1.5rem;
     }
     
@@ -554,7 +646,7 @@ style.textContent = `
     .result-stats strong {
         display: block;
         font-size: 1.5rem;
-        color: var(--primary-color);
+        color: #2563eb;
         margin-bottom: 0.25rem;
     }
     
@@ -565,7 +657,7 @@ style.textContent = `
     }
     
     .brand-tag {
-        background: var(--bg-color);
+        background: #f1f5f9;
         padding: 0.25rem 0.5rem;
         border-radius: 4px;
         font-size: 0.75rem;
@@ -573,9 +665,24 @@ style.textContent = `
         font-weight: 500;
     }
     
-    .text-success { color: var(--success-color); }
-    .text-warning { color: var(--warning-color); }
-    .text-danger { color: var(--danger-color); }
-    .text-muted { color: var(--text-muted); }
+    .text-success { color: #22c55e; }
+    .text-warning { color: #f59e0b; }
+    .text-danger { color: #ef4444; }
+    .text-muted { color: #64748b; }
+    
+    .status-badge { 
+        padding: 0.25rem 0.5rem; 
+        border-radius: 4px; 
+        font-size: 0.75rem; 
+        font-weight: 500; 
+    }
+    .status-badge.approved { 
+        background: #d1fae5; 
+        color: #065f46; 
+    }
+    .status-badge.pending { 
+        background: #fef3c7; 
+        color: #92400e; 
+    }
 `;
 document.head.appendChild(style);
