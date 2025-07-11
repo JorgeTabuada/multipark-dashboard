@@ -1,9 +1,5 @@
 {
   "version": 2,
-  "public": true,
-  "github": {
-    "enabled": false
-  },
   "builds": [
     {
       "src": "frontend/**",
@@ -12,28 +8,8 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "https://your-backend-url.com/api/$1"
-    },
-    {
       "src": "/(.*)",
       "dest": "/frontend/$1"
-    },
-    {
-      "src": "/",
-      "dest": "/frontend/index.html"
-    }
-  ],
-  "functions": {},
-  "headers": [
-    {
-      "source": "/frontend/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600"
-        }
-      ]
     }
   ]
 }
