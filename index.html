@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MultiPark Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="frontend/styles.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo">
+            <i class="fas fa-car-side"></i>
+            <h2>MultiPark</h2>
+            <small>Dashboard</small>
+        </div>
+        
+        <nav class="nav-menu">
+            <a href="#dashboard" class="nav-item active" data-section="dashboard">
+                <i class="fas fa-chart-dashboard"></i>
+                Dashboard
+            </a>
+            <a href="#upload" class="nav-item" data-section="upload">
+                <i class="fas fa-file-excel"></i>
+                Upload Excel
+            </a>
+            <a href="#bookings" class="nav-item" data-section="bookings">
+                <i class="fas fa-table"></i>
+                Bookings
+            </a>
+            <a href="#partner" class="nav-item" data-section="partner">
+                <i class="fas fa-handshake"></i>
+                Parceiro (60%)
+            </a>
+            <a href="#multipark" class="nav-item" data-section="multipark">
+                <i class="fas fa-building"></i>
+                Multipark (40%)
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <header class="header">
+            <h1 id="page-title">Dashboard</h1>
+            <div class="user-info">
+                <i class="fas fa-user-circle"></i>
+                <span>Administrador</span>
+            </div>
+        </header>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="content-section active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon success">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="total-bookings">2</h3>
+                        <p>Total Bookings</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon warning">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="pending-approval">1</h3>
+                        <p>Aguarda Aprovação</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon info">
+                        <i class="fas fa-euro-sign"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="total-amount">€63.50</h3>
+                        <p>Valor Total</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon primary">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="approval-rate">50%</h3>
+                        <p>Taxa Aprovação</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>💰 Divisão Financeira</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="financial-split">
+                            <div class="split-item partner">
+                                <div class="split-percentage">60%</div>
+                                <div class="split-label">Parceiro</div>
+                                <div class="split-amount" id="partner-amount">€38.10</div>
+                            </div>
+                            <div class="split-divider"></div>
+                            <div class="split-item multipark">
+                                <div class="split-percentage">40%</div>
+                                <div class="split-label">Multipark</div>
+                                <div class="split-amount" id="multipark-amount">€25.40</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🚨 Últimas Actividades</h3>
+                    </div>
+                    <div class="card-content">
+                        <div id="recent-activities" class="activities-list">
+                            <div class="activity-item">
+                                <i class="fas fa-upload"></i>
+                                <span>2 bookings carregados</span>
+                            </div>
+                            <div class="activity-item">
+                                <i class="fas fa-clock"></i>
+                                <span>1 aguarda aprovação</span>
+                            </div>
+                            <div class="activity-item">
+                                <i class="fas fa-euro-sign"></i>
+                                <span>€63.50 valor total processado</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Upload Section -->
+        <section id="upload" class="content-section">
+            <div class="section-header">
+                <h2>📤 Upload de Ficheiro Excel</h2>
+            </div>
+            
+            <div class="card">
+                <div class="card-content">
+                    <div class="upload-area" id="upload-zone">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Funcionalidade em desenvolvimento</h3>
+                        <p>Backend API necessário para processar ficheiros Excel</p>
+                        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                            <p><strong>Dados de teste já carregados:</strong></p>
+                            <ul style="text-align: left; margin: 0;">
+                                <li>João Silva (TEST123) - €35.00 - Aprovado</li>
+                                <li>Maria Santos (TEST456) - €28.50 - Pendente</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bookings Section -->
+        <section id="bookings" class="content-section">
+            <div class="section-header">
+                <h2>📊 Lista de Bookings</h2>
+            </div>
+            
+            <div class="card">
+                <div class="card-content">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Matrícula</th>
+                                    <th>Nome</th>
+                                    <th>Valor</th>
+                                    <th>Parceiro (60%)</th>
+                                    <th>Multipark (40%)</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="success">
+                                    <td><strong>TEST123</strong></td>
+                                    <td>João Silva</td>
+                                    <td><strong>€35.00</strong></td>
+                                    <td>€21.00</td>
+                                    <td>€14.00</td>
+                                    <td><span class="status-badge approved">Aprovado</span></td>
+                                </tr>
+                                <tr class="danger">
+                                    <td><strong>TEST456</strong></td>
+                                    <td>Maria Santos</td>
+                                    <td><strong>€28.50</strong></td>
+                                    <td>€17.10</td>
+                                    <td>€11.40</td>
+                                    <td><span class="status-badge pending">Pendente</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Partner Section -->
+        <section id="partner" class="content-section">
+            <div class="section-header">
+                <h2>🤝 Contas Parceiro (60%)</h2>
+            </div>
+            
+            <div class="card">
+                <div class="card-content">
+                    <div class="financial-breakdown">
+                        <div class="breakdown-item">
+                            <h4>Total Parceiro</h4>
+                            <p class="amount">€38.10</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Multipark Section -->
+        <section id="multipark" class="content-section">
+            <div class="section-header">
+                <h2>🏢 Multipark (40%)</h2>
+            </div>
+            
+            <div class="card">
+                <div class="card-content">
+                    <div class="financial-breakdown">
+                        <div class="breakdown-item">
+                            <h4>Total Multipark</h4>
+                            <p class="amount">€25.40</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="frontend/main.js"></script>
+    
+    <style>
+    /* Basic inline styles for demo */
+    .status-badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
+    .status-badge.approved { background: #d1fae5; color: #065f46; }
+    .status-badge.pending { background: #fef3c7; color: #92400e; }
+    .breakdown-item { text-align: center; padding: 1rem; }
+    .breakdown-item .amount { font-size: 1.5rem; font-weight: bold; color: #2563eb; margin: 0; }
+    .success { background-color: #f0f9ff; }
+    .danger { background-color: #fef2f2; }
+    </style>
+</body>
+</html>
